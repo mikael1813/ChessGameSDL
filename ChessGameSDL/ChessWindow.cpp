@@ -4,10 +4,10 @@
 #include "ChessWindow.h"
 
 ChessWindow::ChessWindow() {
-    this->m_black_square = this->load_surface("Images/chessboard/black-square.bmp");
-    this->m_white_square = this->load_surface("Images/chessboard/white-square.bmp");
-    this->m_small_circle = this->load_surface("Images/chessboard/transparent-circle.bmp");
-    this->m_big_circle = this->load_surface("Images/chessboard/big-circle.bmp");
+    this->m_black_square = this->load_surface((imageAddress + "black-square.bmp").c_str());
+    this->m_white_square = this->load_surface((imageAddress + "white-square.bmp").c_str());
+    this->m_small_circle = this->load_surface((imageAddress + "transparent-circle.bmp").c_str());
+    this->m_big_circle = this->load_surface((imageAddress + "big-circle.bmp").c_str());
 
     game = new Game();
 
@@ -16,7 +16,7 @@ ChessWindow::ChessWindow() {
             if (game->getSquare(i, j).isNotEmpty()) {
                 if (pieceImagePaths.find(game->getSquare(i, j).getData()) == pieceImagePaths.end()) {
                     ChessPiece piece = this->game->getSquare(i, j).getData();
-                    string path = "Images/chessboard/";
+                    string path = imageAddress;
                     if (piece.getColor() == Color::White) {
                         path += "white-";
                     }

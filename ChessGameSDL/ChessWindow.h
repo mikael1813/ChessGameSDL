@@ -30,6 +30,7 @@ private:
 	int endY = 0;
 	int stepX = 0;
 	int stepY = 0;
+	string imageAddress = "Images/chessboard/";
 	map<ChessPiece, SDL_Surface*> pieceImagePaths;
 	Option<tuple<int,int>> lastSelectedPiece;
 };

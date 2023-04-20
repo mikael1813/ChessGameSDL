@@ -27,6 +27,8 @@ public:
 
 	const vector< tuple<unsigned short int, unsigned short int>> getAllPossibleMoves(const unsigned short int i, const unsigned short int j);
 
+	const vector< tuple<unsigned short int, unsigned short int>> checkCastles(Color color);
+
 	const vector< tuple<unsigned short int, unsigned short int>> getAllCorrectMoves(const unsigned short int i, const unsigned short int j);
 
 	const vector< tuple<unsigned short int, unsigned short int>> getAllBishopMoves(const unsigned short int i, const unsigned short int j);
@@ -41,7 +43,11 @@ public:
 
 	const bool isKingInCheck(Color color);
 
+	const bool noValidMoves(Color color);
+
 	const tuple<unsigned short int, unsigned short int> getKingPosition(Color color);
+
+	const bool ifEnPassant(const unsigned short int i, const unsigned short int j);
 
 	const bool move(tuple<unsigned short int, unsigned short int> from, tuple<unsigned short int, unsigned short int> to);
 
