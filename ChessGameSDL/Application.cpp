@@ -36,7 +36,6 @@ Application::~Application()
 
 void Application::loop()
 {
-    bool resized = true;
     bool keep_window_open = true;
     while (keep_window_open)
     {
@@ -46,6 +45,9 @@ void Application::loop()
             {
             case SDL_QUIT:
                 keep_window_open = false;
+                break;
+            case SDL_MOUSEBUTTONDOWN:
+                mousePress(m_window_event.button);
                 break;
             }
             switch (m_window_event.window.event) {
@@ -62,9 +64,18 @@ void Application::loop()
     }
 }
 
-void Application::update(double delta_time)
-{
-    this->chessWindow->moveImage(delta_time);
+void Application::mousePress(SDL_MouseButtonEvent& b) {
+    if (b.button == SDL_BUTTON_LEFT) {
+        int x = b.x;
+        int y = b.y;
+        if (chessWindow->isInsideChessBoard(x, y)) {
+            chessWindow->onLeftClick(this->m_window_surface, x, y);
+        }
+    }
+    if (b.button == SDL_BUTTON_RIGHT) {
+        int x = b.x;
+        int y = b.y;
+    }
 }
 
 void Application::draw()

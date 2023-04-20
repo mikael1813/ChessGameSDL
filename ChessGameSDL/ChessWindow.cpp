@@ -4,15 +4,68 @@
 #include "ChessWindow.h"
 
 ChessWindow::ChessWindow() {
-    this->m_black_square = this->load_surface("Images/black-square.bmp");
-    this->m_white_square = this->load_surface("Images/white-square.bmp");
+    this->m_black_square = this->load_surface("Images/chessboard/black-square.bmp");
+    this->m_white_square = this->load_surface("Images/chessboard/white-square.bmp");
+    this->m_small_circle = this->load_surface("Images/chessboard/transparent-circle.bmp");
+    this->m_big_circle = this->load_surface("Images/chessboard/big-circle.bmp");
 
-    m_image_position.x = 0;
-    m_image_position.y = 0;
-    m_image_position.w = 32;
-    m_image_position.h = 32;
-    m_image_x = 0.0;
-    m_image_y = 0.0;
+    game = new Game();
+
+    for (int i = 0; i < game->getSize(); i++) {
+        for (int j = 0; j < game->getSize(); j++) {
+            if (game->getSquare(i, j).isNotEmpty()) {
+                if (pieceImagePaths.find(game->getSquare(i, j).getData()) == pieceImagePaths.end()) {
+                    ChessPiece piece = this->game->getSquare(i, j).getData();
+                    string path = "Images/chessboard/";
+                    if (piece.getColor() == Color::White) {
+                        path += "white-";
+                    }
+                    else {
+                        path += "black-";
+                    }
+                    if (piece.getType() == Type::Bishop) {
+                        path += "bishop";
+                    }
+                    else if (piece.getType() == Type::Pawn) {
+                        path += "pawn";
+                    }
+                    else if (piece.getType() == Type::Knight) {
+                        path += "knight";
+                    }
+                    else if (piece.getType() == Type::King) {
+                        path += "king";
+                    }
+                    else if (piece.getType() == Type::Queen) {
+                        path += "queen";
+                    }
+                    else {
+                        path += "rook";
+                    }
+
+                    path += ".bmp";
+                    SDL_Surface* m_image_of_piece = this->load_surface(path.c_str());
+                    pieceImagePaths.insert({ piece,m_image_of_piece });
+                }
+            }
+        }
+    }
+
+    for (int i = 0; i < game->getSize(); i++) {
+        std::vector<Circle> row;
+        for (int j = 0; j < game->getSize(); j++) {
+            row.push_back(Circle::No);
+        }
+        circled.push_back(row);
+    }
+
+    
+}
+
+bool ChessWindow::isInsideChessBoard(int x, int y) {
+    if (startX <= x && x <= endX && startY <= y && y <= endY) {
+        return true;
+    }
+    return false;
 }
 
 SDL_Surface* ChessWindow::load_surface(char const* path){
@@ -24,9 +77,51 @@ SDL_Surface* ChessWindow::load_surface(char const* path){
     return image_surface;
 }
 
-void ChessWindow::moveImage(double delta_time) {
-    m_image_x = m_image_x + (5 * delta_time);
-    m_image_position.x = m_image_x;
+void ChessWindow::onLeftClick(SDL_Surface* window_surface, int x, int y) {
+
+    int j = (x - startX) / stepX;
+    int i = (y - startY) / stepY;
+    if (lastSelectedPiece.isEmpty()) {
+        this->showCircles(i, j);
+    }
+    else {
+        this->removeCircles();
+
+        tuple<unsigned short int, unsigned short int> to{ i,j };
+
+        if (this->game->move(lastSelectedPiece.getData(), to)) {
+            lastSelectedPiece.Empty();
+        }
+        else {
+            this->showCircles(i, j);
+        }
+    }
+}
+
+void ChessWindow::removeCircles() {
+    for (int i = 0; i < game->getSize(); i++) {
+        for (int j = 0; j < game->getSize(); j++) {
+            circled.at(i).at(j) = Circle::No;
+        }
+    }
+}
+
+void ChessWindow::showCircles(int i, int j) {
+    Option<ChessPiece> piece = this->game->getSquare(i, j);
+    if (piece.isNotEmpty()) {
+        lastSelectedPiece.setData(tuple<int, int>{ i, j });
+        auto moves = this->game->getAllCorrectMoves(i, j);
+        for (tuple<unsigned short int, unsigned short int> t : moves) {
+            this->m_image_position.x = startX + stepX * (get<1>(t));
+            this->m_image_position.y = startY + stepY * (get<0>(t));
+            if (this->game->getSquare(get<0>(t), get<1>(t)).isEmpty()) {
+                circled.at(get<1>(t)).at(get<0>(t)) = Circle::Small;
+            }
+            else {
+                circled.at(get<1>(t)).at(get<0>(t)) = Circle::Big;
+            }
+        }
+    }
 }
 
 void ChessWindow::draw(SDL_Surface* window_surface) {
@@ -34,13 +129,13 @@ void ChessWindow::draw(SDL_Surface* window_surface) {
     int width = window_surface->w;
     int height = window_surface->h;
 
-    int startX = width/2;
-    int endX = width;
-    int startY = 0;
-    int endY = height;
+    startX = width/2;
+    endX = width;
+    startY = 0;
+    endY = height;
 
-    int stepX = (endX - startX) / board_size;
-    int stepY = (endY - startY) / board_size;
+    stepX = (endX - startX) / game->getSize();
+    stepY = (endY - startY) / game->getSize();
 
     if (stepX < stepY) {
         stepY = stepX;
@@ -53,10 +148,8 @@ void ChessWindow::draw(SDL_Surface* window_surface) {
     m_image_position.w = stepX;
     m_image_position.h = stepY;
 
-    SDL_Surface* m_white_pawn = this->load_surface("Images/white-pawn.bmp");
-
-    for (int i = 0; i < board_size; i++) {
-        for (int j = 0; j < board_size; j++) {
+    for (int i = 0; i < game->getSize(); i++) {
+        for (int j = 0; j < game->getSize(); j++) {
             m_image_position.x = startX + stepX * i;
             m_image_position.y = startY + stepY * j;
             if ((i + j) % 2 == 0) {
@@ -65,8 +158,17 @@ void ChessWindow::draw(SDL_Surface* window_surface) {
             else {
                 SDL_BlitScaled(this->m_black_square, NULL, window_surface, &this->m_image_position);
             }
-            if (j < 2 || j > 5) {
-                SDL_BlitScaled(m_white_pawn, NULL, window_surface, &this->m_image_position);
+            if (circled.at(i).at(j) == Circle::Small) {
+                SDL_BlitScaled(this->m_small_circle, NULL, window_surface, &this->m_image_position);
+            }
+            if (circled.at(i).at(j) == Circle::Big) {
+                SDL_BlitScaled(this->m_big_circle, NULL, window_surface, &this->m_image_position);
+            }
+
+            if (this->game->getSquare(j, i).isNotEmpty()) {
+                ChessPiece piece = this->game->getSquare(j, i).getData();
+
+                SDL_BlitScaled(pieceImagePaths.at(piece), NULL, window_surface, &this->m_image_position);
             }
         }
     }

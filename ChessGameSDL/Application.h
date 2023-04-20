@@ -11,8 +11,8 @@ public:
     ~Application();
 
     void loop();
-    void update(double delta_time);
     void draw();
+    void mousePress(SDL_MouseButtonEvent& b);
 private:
     SDL_Window* m_window;
     SDL_Surface* m_window_surface;

@@ -1,18 +1,35 @@
 #pragma once
 
 #include <SDL.h>
+#include "Game.h"
+
+enum class Circle {
+	No, Small, Big
+};
 
 class ChessWindow {
 public:
 	SDL_Surface* load_surface(char const* path);
 	ChessWindow();
-	void moveImage(double delta_time);
+	void onLeftClick(SDL_Surface* window_surface, int x, int y);
 	void draw(SDL_Surface* window_surface);
+	bool isInsideChessBoard(int x, int y);
+	void showCircles(int i, int j);
+	void removeCircles();
 private:
 	SDL_Surface* m_black_square;
 	SDL_Surface* m_white_square;
+	SDL_Surface* m_small_circle;
+	SDL_Surface* m_big_circle;
 	SDL_Rect     m_image_position;
-	double       m_image_x;
-	double       m_image_y;
-	const unsigned short board_size = 8;
+	std::vector<std::vector<Circle>> circled;
+	Game* game;
+	int startX = 0;
+	int endX = 0;
+	int startY = 0;
+	int endY = 0;
+	int stepX = 0;
+	int stepY = 0;
+	map<ChessPiece, SDL_Surface*> pieceImagePaths;
+	Option<tuple<int,int>> lastSelectedPiece;
 };
