@@ -13,8 +13,9 @@ using namespace std;
 class Game {
 private:
 	vector<vector<Option<ChessPiece>>> board;
+	vector<bool> haveRooksMoved;
 	const unsigned short int boardSize = 8;
-	string movesHistory = "";
+	vector<string> movesHistory;
 	int moveCount = 0;
 	Color turn = Color::White;
 	const map<char, unsigned short int> letterPositions{ {'a',0},{'b',1},{'c',2},{'d',3},{'e',4},{'f',5},{'g',6},{'h',7} };
@@ -28,6 +29,8 @@ public:
 	const vector< tuple<unsigned short int, unsigned short int>> getAllPossibleMoves(const unsigned short int i, const unsigned short int j);
 
 	const vector< tuple<unsigned short int, unsigned short int>> checkCastles(Color color);
+
+	void castle(Color color, bool big);
 
 	const vector< tuple<unsigned short int, unsigned short int>> getAllCorrectMoves(const unsigned short int i, const unsigned short int j);
 
@@ -44,6 +47,8 @@ public:
 	const bool isKingInCheck(Color color);
 
 	const bool noValidMoves(Color color);
+
+	const bool hasKingMoved(Color color);
 
 	const tuple<unsigned short int, unsigned short int> getKingPosition(Color color);
 

@@ -4,6 +4,9 @@
 
 Game::Game() {
 
+	for (int i = 0; i < 4; i++) {
+		haveRooksMoved.push_back(false);
+	}
 
 	this->board.push_back({ Option<ChessPiece>(ChessPiece(Color::Black, Type::Rook)),Option<ChessPiece>(ChessPiece(Color::Black, Type::Knight)),Option<ChessPiece>(ChessPiece(Color::Black, Type::Bishop)),Option<ChessPiece>(ChessPiece(Color::Black, Type::Queen)),Option<ChessPiece>(ChessPiece(Color::Black, Type::King)),Option<ChessPiece>(ChessPiece(Color::Black, Type::Bishop)),Option<ChessPiece>(ChessPiece(Color::Black, Type::Knight)),Option<ChessPiece>(ChessPiece(Color::Black, Type::Rook)) });
 	for (int i = 1; i < this->boardSize - 1; i++) {
@@ -42,6 +45,54 @@ const tuple<unsigned short int, unsigned short int> Game::getActualPostion(const
 
 const vector< tuple<unsigned short int, unsigned short int>> Game::checkCastles(Color color) {
 	vector< tuple<unsigned short int, unsigned short int>> castles;
+
+	int x = 0;
+	int k = 0;
+	if (color == Color::White) {
+		x = boardSize - 1;
+		k = 2;
+	}
+
+	if (!hasKingMoved(color)) {
+
+		vector< tuple<unsigned short int, unsigned short int>> possible_stops;
+
+		for (unsigned short int i = 0; i < this->boardSize; i++) {
+			for (unsigned short int j = 0; j < this->boardSize; j++) {
+				if (!this->board.at(i).at(j).isEmpty() && this->board.at(i).at(j).getData().getColor() != color) {
+					vector< tuple<unsigned short int, unsigned short int>> possible_moves = getAllPossibleMoves(i, j);
+					possible_stops.insert(possible_stops.end(), possible_moves.begin(), possible_moves.end());
+				}
+			}
+		}
+
+		if (haveRooksMoved.at(k) == false) {
+			bool ok = true;
+			for (int j = 1; j < 4; j++) {
+				if (board.at(x).at(j).isNotEmpty() || std::find(possible_stops.begin(), possible_stops.end(), tuple<unsigned short int, unsigned short int>{x, j}) != possible_stops.end()) {
+					ok = false;
+					break;
+				}
+			}
+			if (ok) {
+				castles.push_back(tuple<unsigned short int, unsigned short int>{x, 2});
+			}
+		}
+
+		if (haveRooksMoved.at(k + 1) == false) {
+			bool ok = true;
+			for (int j = 5; j < 7; j++) {
+				if (board.at(x).at(j).isNotEmpty() || std::find(possible_stops.begin(), possible_stops.end(), tuple<unsigned short int, unsigned short int>{x, j}) != possible_stops.end()) {
+					ok = false;
+					break;
+				}
+			}
+			if (ok) {
+				castles.push_back(tuple<unsigned short int, unsigned short int>{x, 6});
+			}
+		}
+	}
+
 	return castles;
 }
 
@@ -57,7 +108,7 @@ const bool Game::ifEnPassant(const unsigned short int i, const unsigned short in
 	if (i == 3 && piece.getColor() != Color::Black) {
 		return false;
 	}
-	if (i == 4 && piece.getColor() != Color::White) {
+	if (i == boardSize - 4 && piece.getColor() != Color::White) {
 		return false;
 	}
 
@@ -67,22 +118,13 @@ const bool Game::ifEnPassant(const unsigned short int i, const unsigned short in
 	pos += to_string(boardSize - i);
 	string pos2 = pos + "+";
 
-	std::stringstream test(this->movesHistory);
-	std::string segment;
-	std::vector<std::string> seglist;
-
-	while (std::getline(test, segment, ' '))
-	{
-		seglist.push_back(segment);
-	}
-
-	if (seglist.at(seglist.size() - 1) != pos && seglist.at(seglist.size() - 1) != pos2) {
+	if (movesHistory.at(movesHistory.size() - 1) != pos && movesHistory.at(movesHistory.size() - 1) != pos2) {
 		return false;
 	}
 
 	int x = 2;
-	if (i == 4) {
-		x = 5;
+	if (i == boardSize - 4) {
+		x = i + 1;
 	}
 
 	pos = "";
@@ -90,7 +132,7 @@ const bool Game::ifEnPassant(const unsigned short int i, const unsigned short in
 	pos += to_string(boardSize - x);
 	pos2 = pos + "+";
 
-	for (string position : seglist) {
+	for (string position : movesHistory) {
 		if (position == pos || position == pos2) {
 			return false;
 		}
@@ -117,10 +159,10 @@ const  vector< tuple<unsigned short int, unsigned short int>> Game::getAllPossib
 		if (j > 0 && this->board.at(i + 1).at(j - 1).isNotEmpty() && this->board.at(i + 1).at(j - 1).getData().getColor() == Color::White) {
 			possible_moves.push_back({ i + 1,j - 1 });
 		}
-		if (j > 0 && i == 4 && this->board.at(i).at(j - 1).isNotEmpty() && this->board.at(i).at(j - 1).getData().getType() == Type::Pawn && ifEnPassant(i, j - 1)) {
+		if (j > 0 && i == boardSize - 4 && this->board.at(i).at(j - 1).isNotEmpty() && this->board.at(i).at(j - 1).getData().getType() == Type::Pawn && ifEnPassant(i, j - 1)) {
 			possible_moves.push_back({ i + 1,j - 1 });
 		}
-		if (j < this->boardSize - 1 && i == 4 && this->board.at(i).at(j + 1).isNotEmpty() && this->board.at(i).at(j + 1).getData().getType() == Type::Pawn && ifEnPassant(i, j + 1)) {
+		if (j < this->boardSize - 1 && i == boardSize - 4 && this->board.at(i).at(j + 1).isNotEmpty() && this->board.at(i).at(j + 1).getData().getType() == Type::Pawn && ifEnPassant(i, j + 1)) {
 			possible_moves.push_back({ i + 1,j + 1 });
 		}
 	}
@@ -267,11 +309,41 @@ const vector< tuple<unsigned short int, unsigned short int>> Game::getMoves(shor
 	return possible_moves;
 }
 
+void Game::castle(Color color, bool big) {
+	int i = 0, j = 4;
+	if (color == Color::White) {
+		i = boardSize - 1;
+	}
+	if (big) {
+		board.at(i).at(j - 2).setData(board.at(i).at(j).getData());
+		board.at(i).at(j).Empty();
+		board.at(i).at(j - 1).setData(board.at(i).at(0).getData());
+		board.at(i).at(0).Empty();
+	}
+	else {
+		board.at(i).at(j + 2).setData(board.at(i).at(j).getData());
+		board.at(i).at(j).Empty();
+		board.at(i).at(j + 1).setData(board.at(i).at(boardSize - 1).getData());
+		board.at(i).at(boardSize - 1).Empty();
+	}
+}
+
 const bool Game::move(tuple<unsigned short int, unsigned short int> from, tuple<unsigned short int, unsigned short int> to) {
 	vector< tuple<unsigned short int, unsigned short int>> correct_moves = this->getAllCorrectMoves(get<0>(from), get<1>(from));
 
 	if (find(correct_moves.begin(), correct_moves.end(), to) != correct_moves.end()) {
-		this->addHistory(get<0>(from), get<1>(from), get<0>(to), get<1>(to));
+
+		if (this->board.at(get<0>(from)).at(get<1>(from)).getData().getType() == Type::Rook) {
+			for (int i = 0; i <= 1; i++) {
+				for (int j = 0; j <= 1; j++) {
+					tuple<unsigned short int, unsigned short int> tup{ i * (boardSize - 1),j * (boardSize - 1) };
+					if (from == tup) {
+						haveRooksMoved.at((i * (boardSize - 1) + 2 * j * (boardSize - 1)) / (boardSize - 1)) = true;
+					}
+				}
+			}
+		}
+
 		if (this->turn == Color::White) {
 			this->turn = Color::Black;
 		}
@@ -279,29 +351,43 @@ const bool Game::move(tuple<unsigned short int, unsigned short int> from, tuple<
 			this->turn = Color::White;
 		}
 
-		if (this->board.at(get<0>(from)).at(get<1>(from)).getData().getType() == Type::Pawn && this->board.at(get<0>(to)).at(get<1>(to)).isEmpty() && get<1>(from) != get<1>(to)) {
-			this->board.at(get<0>(from)).at(get<1>(to)).Empty();
+		if (this->board.at(get<0>(from)).at(get<1>(from)).getData().getType() == Type::King && abs(get<1>(from) - get<1>(to)) == 2) {
+			if (get<1>(from) - get<1>(to) > 0) {
+				castle(this->board.at(get<0>(from)).at(get<1>(from)).getData().getColor(), true);
+				movesHistory.push_back("0-0-0");
+			}
+			else {
+				castle(this->board.at(get<0>(from)).at(get<1>(from)).getData().getColor(), false);
+				movesHistory.push_back("0-0");
+			}
 		}
+		else {
+			this->addHistory(get<0>(from), get<1>(from), get<0>(to), get<1>(to));
 
-		this->board.at(get<0>(to)).at(get<1>(to)).setData(this->board.at(get<0>(from)).at(get<1>(from)).getData());
-		this->board.at(get<0>(from)).at(get<1>(from)).Empty();
-		if (isKingInCheck(turn)) {
-			this->movesHistory.push_back('+');
+			if (this->board.at(get<0>(from)).at(get<1>(from)).getData().getType() == Type::Pawn && this->board.at(get<0>(to)).at(get<1>(to)).isEmpty() && get<1>(from) != get<1>(to)) {
+				this->board.at(get<0>(from)).at(get<1>(to)).Empty();
+			}
+
+			this->board.at(get<0>(to)).at(get<1>(to)).setData(this->board.at(get<0>(from)).at(get<1>(from)).getData());
+			this->board.at(get<0>(from)).at(get<1>(from)).Empty();
+			if (isKingInCheck(turn)) {
+				this->movesHistory.at(movesHistory.size() - 1).push_back('+');
+			}
 		}
 
 		if (this->noValidMoves(turn)) {
-			if (this->movesHistory.at(movesHistory.size() - 1) == '+') {
+			if (this->movesHistory.at(movesHistory.size() - 1).at(movesHistory.at(movesHistory.size() - 1).size() - 1) == '+') {
 				//checkmate
 				if (turn == Color::Black) {
-					this->movesHistory += " 1-0";
+					this->movesHistory.push_back("1-0");
 				}
 				else {
-					this->movesHistory += " 0-1";
+					this->movesHistory.push_back("0-1");
 				}
 			}
 			else {
 				//stalemate
-				this->movesHistory += " 1/2-1/2";
+				this->movesHistory.push_back("1/2-1/2");
 			}
 		}
 
@@ -315,42 +401,42 @@ const bool Game::move(tuple<unsigned short int, unsigned short int> from, tuple<
 void Game::addHistory(const unsigned short int i, const unsigned short int j, const unsigned short int toi, const unsigned short int toj) {
 	if (this->board.at(i).at(j).getData().getColor() == Color::White) {
 		this->moveCount++;
-		this->movesHistory += " " + to_string(this->moveCount) + ".";
+		this->movesHistory.push_back(to_string(this->moveCount) + ".");
 	}
 	char letter = 'a' + j;
-	this->movesHistory.push_back(' ');
-
+	string move;
 	if (this->board.at(i).at(j).getData().getType() != Type::Pawn && this->historyHelper(i, j, toi, toj)) {
-		this->movesHistory.push_back(letter);
+		move.push_back(letter);
 	}
 
 	switch (this->board.at(i).at(j).getData().getType()) {
 	case Type::Bishop:
-		this->movesHistory.push_back('B');
+		move.push_back('B');
 		break;
 	case Type::Knight:
-		this->movesHistory.push_back('N');
+		move.push_back('N');
 		break;
 	case Type::Rook:
-		this->movesHistory.push_back('R');
+		move.push_back('R');
 		break;
 	case Type::Queen:
-		this->movesHistory.push_back('Q');
+		move.push_back('Q');
 		break;
 	case Type::King:
-		this->movesHistory.push_back('K');
+		move.push_back('K');
 		break;
 	}
 
 	if (this->board.at(toi).at(toj).isNotEmpty()) {
 		if (this->board.at(i).at(j).getData().getType() == Type::Pawn) {
-			this->movesHistory.push_back(letter);
+			move.push_back(letter);
 		}
-		this->movesHistory += 'x';
+		move += 'x';
 	}
 	letter = 'a' + toj;
-	this->movesHistory.push_back(letter);
-	this->movesHistory += to_string(this->boardSize - toi);
+	move.push_back(letter);
+	move += to_string(this->boardSize - toi);
+	movesHistory.push_back(move);
 }
 
 const bool Game::historyHelper(const unsigned short int x, const unsigned short int y, const unsigned short int toi, const unsigned short int toj) {
@@ -412,6 +498,8 @@ const vector< tuple<unsigned short int, unsigned short int>> Game::getAllCorrect
 		this->board.at(i).at(j) = piece;
 		this->board.at(i).at(get<1>(pos)) = auxForEnPassant;
 	}
+	vector< tuple<unsigned short int, unsigned short int>> castle_moves = checkCastles(color);
+	correct_moves.insert(correct_moves.end(), castle_moves.begin(), castle_moves.end());
 
 	return correct_moves;
 }
@@ -437,6 +525,40 @@ const bool Game::isKingInCheck(Color color) {
 	}
 
 	return false;
+}
+
+const bool Game::hasKingMoved(Color color) {
+	int i = 0, j = 4;
+	if (color == Color::White) {
+		i = boardSize - 1;
+	}
+
+	if (board.at(i).at(j).isNotEmpty() && board.at(i).at(j).getData().getType() == Type::King && board.at(i).at(j).getData().getColor() == color) {
+
+		for (int k = -1; k <= 1; k++) {
+			for (int l = -1; l <= 1; l++) {
+				if (!(k == 0 && l == 0) && 0 <= i + k && i + k < this->boardSize && 0 <= j + l && j + l < this->boardSize) {
+					string possible_move = "K";
+					char letter = 'a' + j + l;
+					possible_move.push_back(letter);
+					possible_move += to_string(boardSize - (i + k));
+
+					for (string move : movesHistory) {
+						move.erase(remove(move.begin(), move.end(), 'x'), move.end());
+						move.erase(remove(move.begin(), move.end(), '+'), move.end());
+						if (move == possible_move) {
+							return true;
+						}
+					}
+				}
+
+			}
+		}
+
+		return false;
+	}
+
+	return true;
 }
 
 const tuple<unsigned short int, unsigned short int> Game::getKingPosition(Color color) {
