@@ -10,6 +10,10 @@
 
 using namespace std;
 
+enum class MoveOutcome {
+	PawnPromote,BlackWin,WhiteWin,InvalidMove,ValidMove,StaleMate
+};
+
 class Game {
 private:
 	vector<vector<Option<ChessPiece>>> board;
@@ -50,11 +54,17 @@ public:
 
 	const bool hasKingMoved(Color color);
 
+	const MoveOutcome promote(const short int i, const short int j, ChessPiece piece);
+
+	const tuple<unsigned short int, unsigned short int> getPromotedPawnPositions();
+
 	const tuple<unsigned short int, unsigned short int> getKingPosition(Color color);
 
 	const bool ifEnPassant(const unsigned short int i, const unsigned short int j);
 
-	const bool move(tuple<unsigned short int, unsigned short int> from, tuple<unsigned short int, unsigned short int> to);
+	const MoveOutcome move(tuple<unsigned short int, unsigned short int> from, tuple<unsigned short int, unsigned short int> to);
+
+	const MoveOutcome endMove();
 
 	void addHistory(const unsigned short int i, const unsigned short int j, const unsigned short int toi, const unsigned short int toj);
 

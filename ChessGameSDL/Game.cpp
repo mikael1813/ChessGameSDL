@@ -147,16 +147,16 @@ const  vector< tuple<unsigned short int, unsigned short int>> Game::getAllPossib
 	ChessPiece piece = this->board.at(i).at(j).getData();
 
 	if (piece == ChessPiece(Color::Black, Type::Pawn)) {
-		if (this->board.at(i + 1).at(j).isEmpty()) {
+		if (i < boardSize && this->board.at(i + 1).at(j).isEmpty()) {
 			possible_moves.push_back({ i + 1,j });
 		}
 		if (i == 1 && this->board.at(i + 2).at(j).isEmpty()) {
 			possible_moves.push_back({ i + 2,j });
 		}
-		if (j < this->boardSize - 1 && this->board.at(i + 1).at(j + 1).isNotEmpty() && this->board.at(i + 1).at(j + 1).getData().getColor() == Color::White) {
+		if (i < boardSize && j < this->boardSize - 1 && this->board.at(i + 1).at(j + 1).isNotEmpty() && this->board.at(i + 1).at(j + 1).getData().getColor() == Color::White) {
 			possible_moves.push_back({ i + 1,j + 1 });
 		}
-		if (j > 0 && this->board.at(i + 1).at(j - 1).isNotEmpty() && this->board.at(i + 1).at(j - 1).getData().getColor() == Color::White) {
+		if (i < boardSize && j > 0 && this->board.at(i + 1).at(j - 1).isNotEmpty() && this->board.at(i + 1).at(j - 1).getData().getColor() == Color::White) {
 			possible_moves.push_back({ i + 1,j - 1 });
 		}
 		if (j > 0 && i == boardSize - 4 && this->board.at(i).at(j - 1).isNotEmpty() && this->board.at(i).at(j - 1).getData().getType() == Type::Pawn && ifEnPassant(i, j - 1)) {
@@ -168,16 +168,16 @@ const  vector< tuple<unsigned short int, unsigned short int>> Game::getAllPossib
 	}
 
 	else if (piece == ChessPiece(Color::White, Type::Pawn)) {
-		if (this->board.at(i - 1).at(j).isEmpty()) {
+		if (i > 0 && this->board.at(i - 1).at(j).isEmpty()) {
 			possible_moves.push_back({ i - 1,j });
 		}
 		if (i == this->boardSize - 2 && this->board.at(i - 2).at(j).isEmpty()) {
 			possible_moves.push_back({ i - 2,j });
 		}
-		if (j < this->boardSize - 1 && this->board.at(i - 1).at(j + 1).isNotEmpty() && this->board.at(i - 1).at(j + 1).getData().getColor() == Color::Black) {
+		if (i > 0 && j < this->boardSize - 1 && this->board.at(i - 1).at(j + 1).isNotEmpty() && this->board.at(i - 1).at(j + 1).getData().getColor() == Color::Black) {
 			possible_moves.push_back({ i - 1,j + 1 });
 		}
-		if (j > 0 && this->board.at(i - 1).at(j - 1).isNotEmpty() && this->board.at(i - 1).at(j - 1).getData().getColor() == Color::Black) {
+		if (i > 0 && j > 0 && this->board.at(i - 1).at(j - 1).isNotEmpty() && this->board.at(i - 1).at(j - 1).getData().getColor() == Color::Black) {
 			possible_moves.push_back({ i - 1,j - 1 });
 		}
 		if (j > 0 && i == 3 && this->board.at(i).at(j - 1).isNotEmpty() && this->board.at(i).at(j - 1).getData().getType() == Type::Pawn && ifEnPassant(i, j - 1)) {
@@ -328,7 +328,7 @@ void Game::castle(Color color, bool big) {
 	}
 }
 
-const bool Game::move(tuple<unsigned short int, unsigned short int> from, tuple<unsigned short int, unsigned short int> to) {
+const MoveOutcome Game::move(tuple<unsigned short int, unsigned short int> from, tuple<unsigned short int, unsigned short int> to) {
 	vector< tuple<unsigned short int, unsigned short int>> correct_moves = this->getAllCorrectMoves(get<0>(from), get<1>(from));
 
 	if (find(correct_moves.begin(), correct_moves.end(), to) != correct_moves.end()) {
@@ -342,13 +342,6 @@ const bool Game::move(tuple<unsigned short int, unsigned short int> from, tuple<
 					}
 				}
 			}
-		}
-
-		if (this->turn == Color::White) {
-			this->turn = Color::Black;
-		}
-		else {
-			this->turn = Color::White;
 		}
 
 		if (this->board.at(get<0>(from)).at(get<1>(from)).getData().getType() == Type::King && abs(get<1>(from) - get<1>(to)) == 2) {
@@ -370,32 +363,55 @@ const bool Game::move(tuple<unsigned short int, unsigned short int> from, tuple<
 
 			this->board.at(get<0>(to)).at(get<1>(to)).setData(this->board.at(get<0>(from)).at(get<1>(from)).getData());
 			this->board.at(get<0>(from)).at(get<1>(from)).Empty();
-			if (isKingInCheck(turn)) {
-				this->movesHistory.at(movesHistory.size() - 1).push_back('+');
+
+			int x = 0;
+			if (this->board.at(get<0>(to)).at(get<1>(to)).getData().getColor() == Color::Black) {
+				x = boardSize - 1;
+			}
+			if (this->board.at(get<0>(to)).at(get<1>(to)).getData().getType() == Type::Pawn && get<0>(to) == x) {
+				return MoveOutcome::PawnPromote;
 			}
 		}
 
-		if (this->noValidMoves(turn)) {
-			if (this->movesHistory.at(movesHistory.size() - 1).at(movesHistory.at(movesHistory.size() - 1).size() - 1) == '+') {
-				//checkmate
-				if (turn == Color::Black) {
-					this->movesHistory.push_back("1-0");
-				}
-				else {
-					this->movesHistory.push_back("0-1");
-				}
-			}
-			else {
-				//stalemate
-				this->movesHistory.push_back("1/2-1/2");
-			}
-		}
-
-		return true;
+		return endMove();
 	}
 	else {
-		return false;
+		return MoveOutcome::InvalidMove;
 	}
+}
+
+const MoveOutcome Game::endMove() {
+	if (this->turn == Color::White) {
+		this->turn = Color::Black;
+	}
+	else {
+		this->turn = Color::White;
+	}
+
+	if (isKingInCheck(turn)) {
+		this->movesHistory.at(movesHistory.size() - 1).push_back('+');
+	}
+
+	if (this->noValidMoves(turn)) {
+		if (this->movesHistory.at(movesHistory.size() - 1).at(movesHistory.at(movesHistory.size() - 1).size() - 1) == '+') {
+			//checkmate
+			if (turn == Color::Black) {
+				this->movesHistory.push_back("1-0");
+				return MoveOutcome::WhiteWin;
+			}
+			else {
+				this->movesHistory.push_back("0-1");
+				return MoveOutcome::BlackWin;
+			}
+		}
+		else {
+			//stalemate
+			this->movesHistory.push_back("1/2-1/2");
+			return MoveOutcome::StaleMate;
+		}
+	}
+
+	return MoveOutcome::ValidMove;
 }
 
 void Game::addHistory(const unsigned short int i, const unsigned short int j, const unsigned short int toi, const unsigned short int toj) {
@@ -456,6 +472,40 @@ const bool Game::historyHelper(const unsigned short int x, const unsigned short 
 	}
 
 	return false;
+}
+
+const tuple<unsigned short int, unsigned short int> Game::getPromotedPawnPositions() {
+	int i = 0;
+	if (this->turn == Color::Black) {
+		i = boardSize - 1;
+	}
+	for (int j = 0; j < boardSize - 1; j++) {
+		if (board.at(i).at(j).isNotEmpty() && board.at(i).at(j).getData().getType() == Type::Pawn) {
+			return tuple<unsigned short int, unsigned short int>{i, j};
+		}
+	}
+}
+
+const MoveOutcome Game::promote(const short int i, const short int j, ChessPiece piece) {
+	board.at(i).at(j).setData(piece);
+	this->movesHistory.at(movesHistory.size() - 1).push_back('=');
+
+		switch (piece.getType()) {
+		case Type::Bishop:
+			this->movesHistory.at(movesHistory.size() - 1).push_back('B');
+			break;
+		case Type::Knight:
+			this->movesHistory.at(movesHistory.size() - 1).push_back('N');
+			break;
+		case Type::Rook:
+			this->movesHistory.at(movesHistory.size() - 1).push_back('R');
+			break;
+		case Type::Queen:
+			this->movesHistory.at(movesHistory.size() - 1).push_back('Q');
+			break;
+		}
+
+	return endMove();
 }
 
 const bool Game::noValidMoves(Color color) {

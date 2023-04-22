@@ -49,7 +49,7 @@ ChessWindow::ChessWindow() {
             }
         }
     }
-
+    initializeToPromote();
     for (int i = 0; i < game->getSize(); i++) {
         std::vector<Circle> row;
         for (int j = 0; j < game->getSize(); j++) {
@@ -81,20 +81,73 @@ void ChessWindow::onLeftClick(SDL_Surface* window_surface, int x, int y) {
 
     int j = (x - startX) / stepX;
     int i = (y - startY) / stepY;
-    if (lastSelectedPiece.isEmpty()) {
-        this->showCircles(i, j);
+    if (needToPromote()) {
+        if (toPromote.at(i).at(j)) {
+            ChessPiece piece;
+            int x = 0;
+            if (i < game->getSize() / 2) {
+                piece.setColor(Color::White);
+                i++;
+            }
+            else {
+                piece.setColor(Color::Black);
+            }
+            piece.setType(promoteOrder.at(abs((game->getSize() / 2) - i)));
+
+            MoveOutcome outcome = game->promote(x, j, piece);
+
+            proccesMoveOutcome(i, j, outcome);
+
+            initializeToPromote();
+        }
     }
     else {
-        this->removeCircles();
-
-        tuple<unsigned short int, unsigned short int> to{ i,j };
-
-        if (this->game->move(lastSelectedPiece.getData(), to)) {
-            lastSelectedPiece.Empty();
-        }
-        else {
+        if (lastSelectedPiece.isEmpty()) {
             this->showCircles(i, j);
         }
+        else {
+            this->removeCircles();
+
+            tuple<unsigned short int, unsigned short int> to{ i,j };
+
+            MoveOutcome outcome = this->game->move(lastSelectedPiece.getData(), to);
+
+            proccesMoveOutcome(i, j, outcome);
+        }
+    }
+}
+
+void ChessWindow::proccesMoveOutcome(unsigned short int i, unsigned short int j, MoveOutcome outcome) {
+    switch (outcome) {
+    case MoveOutcome::InvalidMove:
+        this->showCircles(i, j);
+        break;
+    case MoveOutcome::ValidMove:
+        lastSelectedPiece.Empty();
+        break;
+    case MoveOutcome::WhiteWin:
+        //to do
+        break;
+    case MoveOutcome::BlackWin:
+        //to do
+        break;
+    case MoveOutcome::StaleMate:
+        //to do
+        break;
+    case MoveOutcome::PawnPromote:
+        tuple<unsigned short int, unsigned short int> pawn = this->game->getPromotedPawnPositions();
+        vector<int> list;
+        if (game->getSquare(get<0>(pawn), get<1>(pawn)).getData().getColor() == Color::White) {
+            list = vector<int>{ 0,1,2,3 };
+        }
+        else {
+            int size = game->getSize() - 1;
+            list = vector<int>{ size,size - 1,size - 2,size - 3 };;
+        }
+        for (int i : list) {
+            toPromote.at(i).at(get<1>(pawn)) = true;
+        }
+        break;
     }
 }
 
@@ -152,23 +205,59 @@ void ChessWindow::draw(SDL_Surface* window_surface) {
         for (int j = 0; j < game->getSize(); j++) {
             m_image_position.x = startX + stepX * i;
             m_image_position.y = startY + stepY * j;
-            if ((i + j) % 2 == 0) {
+            if (toPromote.at(j).at(i)) {
                 SDL_BlitScaled(this->m_white_square, NULL, window_surface, &this->m_image_position);
-            }
-            else {
-                SDL_BlitScaled(this->m_black_square, NULL, window_surface, &this->m_image_position);
-            }
-            if (circled.at(i).at(j) == Circle::Small) {
-                SDL_BlitScaled(this->m_small_circle, NULL, window_surface, &this->m_image_position);
-            }
-            if (circled.at(i).at(j) == Circle::Big) {
-                SDL_BlitScaled(this->m_big_circle, NULL, window_surface, &this->m_image_position);
-            }
 
-            if (this->game->getSquare(j, i).isNotEmpty()) {
-                ChessPiece piece = this->game->getSquare(j, i).getData();
+                ChessPiece piece;
+                if (j < this->game->getSize() / 2) {
+                    piece.setColor(Color::White);
+                    j++;
+                }
+                else {
+                    piece.setColor(Color::Black);
+                }
+
+                switch (abs((this->game->getSize() / 2) - j)) {
+                case 0:
+                    piece.setType(promoteOrder.at(0));
+                    break;
+                case 1:
+                    piece.setType(promoteOrder.at(1));
+                    break;
+                case 2:
+                    piece.setType(promoteOrder.at(2));
+                    break;
+                case 3:
+                    piece.setType(promoteOrder.at(3));
+                    break;
+                }
+
+                if (piece.getColor() == Color::White) {
+                    j--;
+                }
 
                 SDL_BlitScaled(pieceImagePaths.at(piece), NULL, window_surface, &this->m_image_position);
+
+            }
+            else {
+                if ((i + j) % 2 == 0) {
+                    SDL_BlitScaled(this->m_white_square, NULL, window_surface, &this->m_image_position);
+                }
+                else {
+                    SDL_BlitScaled(this->m_black_square, NULL, window_surface, &this->m_image_position);
+                }
+                if (circled.at(i).at(j) == Circle::Small) {
+                    SDL_BlitScaled(this->m_small_circle, NULL, window_surface, &this->m_image_position);
+                }
+                if (circled.at(i).at(j) == Circle::Big) {
+                    SDL_BlitScaled(this->m_big_circle, NULL, window_surface, &this->m_image_position);
+                }
+
+                if (this->game->getSquare(j, i).isNotEmpty()) {
+                    ChessPiece piece = this->game->getSquare(j, i).getData();
+
+                    SDL_BlitScaled(pieceImagePaths.at(piece), NULL, window_surface, &this->m_image_position);
+                }
             }
         }
     }
