@@ -134,6 +134,7 @@ void ChessWindow::releaseLeftClick() {
 
         proccesMoveOutcome(i, j, outcome);
     }
+    lastSelectedPiece.Empty();
 }
 
 void ChessWindow::proccesMoveOutcome(unsigned short int i, unsigned short int j, MoveOutcome outcome) {
@@ -283,9 +284,10 @@ void ChessWindow::draw(SDL_Surface* window_surface) {
                     m_image_position.x = get<0>(mousePos);
                     m_image_position.y = get<1>(mousePos);
 
-                    ChessPiece piece = this->game->getSquare(get<0>(lastSelectedPiece.getData()), get<1>(lastSelectedPiece.getData())).getData();
-
-                    SDL_BlitScaled(pieceImagePaths.at(piece), NULL, window_surface, &this->m_image_position);
+                    Option<ChessPiece> piece = this->game->getSquare(get<0>(lastSelectedPiece.getData()), get<1>(lastSelectedPiece.getData()));
+                    if (piece.isNotEmpty()) {
+                        SDL_BlitScaled(pieceImagePaths.at(piece.getData()), NULL, window_surface, &this->m_image_position);
+                    }
                 }
             }
         }
