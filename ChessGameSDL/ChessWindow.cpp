@@ -102,6 +102,7 @@ void ChessWindow::onLeftClick(SDL_Surface* window_surface, int x, int y) {
         }
     }
     else {
+        leftClickPressed = true;
         if (lastSelectedPiece.isEmpty()) {
             this->showCircles(i, j);
         }
@@ -114,6 +115,24 @@ void ChessWindow::onLeftClick(SDL_Surface* window_surface, int x, int y) {
 
             proccesMoveOutcome(i, j, outcome);
         }
+    }
+}
+
+void ChessWindow::releaseLeftClick() {
+    this->leftClickPressed = false;
+
+    tuple<int, int> mousePos = getMousePositions();
+
+    int j = (get<0>(mousePos) - startX) / stepX;
+    int i = (get<1>(mousePos) - startY) / stepY;
+
+    this->removeCircles();
+
+    tuple<unsigned short int, unsigned short int> to{ i,j };
+    if (lastSelectedPiece.isNotEmpty()) {
+        MoveOutcome outcome = this->game->move(lastSelectedPiece.getData(), to);
+
+        proccesMoveOutcome(i, j, outcome);
     }
 }
 
@@ -253,8 +272,18 @@ void ChessWindow::draw(SDL_Surface* window_surface) {
                     SDL_BlitScaled(this->m_big_circle, NULL, window_surface, &this->m_image_position);
                 }
 
-                if (this->game->getSquare(j, i).isNotEmpty()) {
+                if (this->game->getSquare(j, i).isNotEmpty() && !(leftClickPressed && lastSelectedPiece.isNotEmpty() && get<0>(lastSelectedPiece.getData()) == j && get<1>(lastSelectedPiece.getData()) == i)) {
                     ChessPiece piece = this->game->getSquare(j, i).getData();
+
+                    SDL_BlitScaled(pieceImagePaths.at(piece), NULL, window_surface, &this->m_image_position);
+                }
+
+                if (leftClickPressed && lastSelectedPiece.isNotEmpty()) {
+                    tuple<int, int> mousePos = getMousePositionsInsideChessBoard();
+                    m_image_position.x = get<0>(mousePos);
+                    m_image_position.y = get<1>(mousePos);
+
+                    ChessPiece piece = this->game->getSquare(get<0>(lastSelectedPiece.getData()), get<1>(lastSelectedPiece.getData())).getData();
 
                     SDL_BlitScaled(pieceImagePaths.at(piece), NULL, window_surface, &this->m_image_position);
                 }
@@ -263,4 +292,44 @@ void ChessWindow::draw(SDL_Surface* window_surface) {
     }
 
     //SDL_BlitSurface(this->m_black_square, NULL, window_surface, &this->m_image_position);
+}
+
+tuple<int, int> ChessWindow::getMousePositionsInsideChessBoard() {
+    int xMouse = 0;
+    int yMouse = 0;
+    SDL_GetMouseState(&xMouse, &yMouse);
+    xMouse = xMouse - stepX / 2;
+    yMouse = yMouse - stepY / 2;
+    if (xMouse < startX) {
+        xMouse = startX;
+    }
+    if (xMouse > startX + stepX * (this->game->getSize() - 1)) {
+        xMouse = startX + stepX * (this->game->getSize() - 1);
+    }
+    if (yMouse < startY) {
+        yMouse = startY;
+    }
+    if (yMouse > startY + stepY * (this->game->getSize() - 1)) {
+        yMouse = startY + stepY * (this->game->getSize() - 1);
+    }
+    return tuple<int, int>{xMouse, yMouse};
+}
+
+tuple<int, int> ChessWindow::getMousePositions() {
+    int xMouse = 0;
+    int yMouse = 0;
+    SDL_GetMouseState(&xMouse, &yMouse);
+    if (xMouse < startX) {
+        xMouse = startX;
+    }
+    if (xMouse > startX + stepX * (this->game->getSize()-1)) {
+        xMouse = startX + stepX * (this->game->getSize()-1);
+    }
+    if (yMouse < startY) {
+        yMouse = startY;
+    }
+    if (yMouse > startY + stepY * (this->game->getSize()-1)) {
+        yMouse = startY + stepY * (this->game->getSize()-1);
+    }
+    return tuple<int, int>{xMouse, yMouse};
 }
