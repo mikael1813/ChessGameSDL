@@ -13,6 +13,7 @@ int main(int argc, char* args[]) {
 
     app.loop();
     app.draw();
+//wowzers
 
     _CrtSetReportMode(_CRT_WARN, _CRTDBG_MODE_DEBUG);
     _CrtDumpMemoryLeaks();
