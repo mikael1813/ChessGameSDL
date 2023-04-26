@@ -38,6 +38,11 @@ public:
 		}
 		return false;
 	}
+
+	void releaseLeftClick();
+	tuple<int,int> getMousePositionsInsideChessBoard();
+	tuple<int,int> getMousePositions();
+
 private:
 	SDL_Surface* m_black_square;
 	SDL_Surface* m_white_square;
@@ -57,4 +62,5 @@ private:
 	string imageAddress = "Images/chessboard/";
 	map<ChessPiece, SDL_Surface*> pieceImagePaths;
 	Option<tuple<int,int>> lastSelectedPiece;
+	bool leftClickPressed = false;
 };

@@ -49,6 +49,11 @@ void Application::loop()
             case SDL_MOUSEBUTTONDOWN:
                 mousePress(m_window_event.button);
                 break;
+            case SDL_MOUSEBUTTONUP:
+                if (m_window_event.button.button == SDL_BUTTON_LEFT) {
+                    this->chessWindow->releaseLeftClick();
+                }
+                break;
             }
             switch (m_window_event.window.event) {
             case SDL_WINDOWEVENT_SIZE_CHANGED:
@@ -72,6 +77,7 @@ void Application::mousePress(SDL_MouseButtonEvent& b) {
             chessWindow->onLeftClick(this->m_window_surface, x, y);
         }
     }
+    if (b.button)
     if (b.button == SDL_BUTTON_RIGHT) {
         int x = b.x;
         int y = b.y;
